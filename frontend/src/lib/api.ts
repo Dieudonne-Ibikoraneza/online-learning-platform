@@ -158,6 +158,20 @@ export const coursesAPI = {
 
   deleteLesson: (courseId: string, lessonId: string) =>
     api.delete<ApiResponse>(`/courses/${courseId}/lessons/${lessonId}`),
+
+    uploadResource: (courseId: string, lessonId: string, formData: FormData) =>
+    api.post<ApiResponse<Course>>(
+      `/courses/${courseId}/lessons/${lessonId}/resources`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    ),
+
+  deleteResource: (courseId: string, lessonId: string, resourceId: string) =>
+    api.delete<ApiResponse>(
+      `/courses/${courseId}/lessons/${lessonId}/resources/${resourceId}`
+    ),
 };
 
 // Enrollments API
