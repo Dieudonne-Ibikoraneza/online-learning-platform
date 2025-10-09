@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, BookOpen, TrendingUp, AlertCircle } from 'lucide-react';
+import { Users, GalleryVerticalEnd, TrendingUp, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,7 @@ export function AdminDashboard() {
     {
       title: 'Total Courses',
       value: stats?.overview?.totalCourses || '0',
-      icon: BookOpen,
+      icon: GalleryVerticalEnd,
       description: 'Courses created on platform',
     },
     {
@@ -170,7 +170,7 @@ export function AdminDashboard() {
                 Manage Users
               </Button>
               <Button className="w-full justify-start" variant="outline">
-                <BookOpen className="mr-2 h-4 w-4" />
+                <GalleryVerticalEnd className="mr-2 h-4 w-4" />
                 Manage Courses
               </Button>
               <Button className="w-full justify-start" variant="outline">

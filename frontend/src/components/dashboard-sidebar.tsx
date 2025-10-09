@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookOpen,
+  GalleryVerticalEnd,
   Home,
   Users,
   BarChart3,
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 
 const studentNavItems = [
   { href: "/dashboard", label: "Overview", icon: Home },
-  { href: "/dashboard/courses", label: "My Courses", icon: BookOpen },
+  { href: "/dashboard/courses", label: "My Courses", icon: GalleryVerticalEnd },
   { href: "/dashboard/enrolled", label: "Enrolled", icon: GraduationCap },
   { href: "/dashboard/favorites", label: "Favorites", icon: Heart },
   { href: "/dashboard/progress", label: "Progress", icon: BarChart3 },
@@ -28,7 +28,7 @@ const studentNavItems = [
 
 const instructorNavItems = [
   { href: "/dashboard", label: "Overview", icon: Home },
-  { href: "/dashboard/courses", label: "My Courses", icon: BookOpen },
+  { href: "/dashboard/courses", label: "My Courses", icon: GalleryVerticalEnd },
   { href: "/dashboard/create-course", label: "Create Course", icon: Video },
   { href: "/dashboard/students", label: "Students", icon: Users },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
@@ -37,9 +37,8 @@ const instructorNavItems = [
 const adminNavItems = [
   { href: "/dashboard", label: "Overview", icon: Home },
   { href: "/dashboard/users", label: "Users", icon: Users },
-  { href: "/dashboard/courses", label: "Courses", icon: BookOpen },
+  { href: "/dashboard/courses", label: "Courses", icon: GalleryVerticalEnd },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 interface DashboardSidebarProps {
@@ -82,7 +81,7 @@ export function DashboardSidebar({
           {/* Header Section - Fixed at top */}
           <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b">
             <div className="flex items-center">
-              <BookOpen className="h-8 w-8 text-primary" />
+              <GalleryVerticalEnd className="h-8 w-8 text-primary" />
               <span className="ml-2 text-xl font-bold">LearnHub</span>
             </div>
             <Button

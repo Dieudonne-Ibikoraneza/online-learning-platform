@@ -1,8 +1,9 @@
+// types/index.ts
 export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'student' | 'instructor' | 'admin';
+  role: "student" | "instructor" | "admin";
   avatar?: {
     url: string;
     public_id: string;
@@ -21,7 +22,7 @@ export interface Course {
   instructor: User;
   category: string;
   subcategory?: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  difficulty: "beginner" | "intermediate" | "advanced";
   price: number;
   thumbnail?: {
     url: string;
@@ -71,7 +72,7 @@ export interface Lesson {
 export interface Resource {
   _id: string;
   name: string;
-  type: 'pdf' | 'video' | 'image' | 'document' | 'link';
+  type: "pdf" | "video" | "image" | "document" | "link";
   url: string;
   public_id?: string;
   size?: number;
@@ -123,7 +124,7 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
-  role?: 'student' | 'instructor' | 'admin';
+  role?: "student" | "instructor" | "admin";
 }
 
 export interface AuthResponse {
@@ -137,4 +138,72 @@ export interface AuthResponse {
   };
   token: string;
   refreshToken: string;
+}
+
+// ADD THESE CONSTANTS - THEY'RE MISSING FROM YOUR FILE
+export const COURSE_CATEGORIES = [
+  "Programming",
+  "Design",
+  "Business",
+  "Marketing",
+  "Photography",
+  "Music",
+  "Health & Fitness",
+  "Language",
+  "Personal Development",
+  "Other",
+] as const;
+
+export const COURSE_DIFFICULTIES = [
+  "beginner",
+  "intermediate",
+  "advanced",
+] as const;
+
+export const COURSE_LANGUAGES = [
+  "English",
+  "French",
+  "Spanish",
+  "German",
+  "Chinese",
+  "Japanese",
+  "Other",
+] as const;
+
+// Add these additional types that are used in your components
+export interface CourseFilters {
+  category?: string;
+  difficulty?: string;
+  price?: "free" | "paid" | "all";
+  rating?: number;
+  search?: string;
+  sort?: "newest" | "popular" | "rating" | "price-low" | "price-high";
+}
+
+export interface CreateCourseData {
+  title: string;
+  description: string;
+  shortDescription?: string;
+  category: string;
+  subcategory?: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  price: number;
+  requirements: string[];
+  learningOutcomes: string[];
+  tags: string[];
+  language: string;
+}
+
+export interface UpdateCourseData extends Partial<CreateCourseData> {
+  isPublished?: boolean;
+  isFeatured?: boolean;
+}
+
+export interface LessonFormData {
+  title: string;
+  content: string;
+  duration: number;
+  order: number;
+  isFree: boolean;
+  isPublished: boolean;
 }

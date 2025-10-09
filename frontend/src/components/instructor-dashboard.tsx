@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, BookOpen, DollarSign, TrendingUp } from "lucide-react";
+import { Users, GalleryVerticalEnd, DollarSign, TrendingUp } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -36,7 +36,7 @@ export function InstructorDashboard() {
     {
       title: "Total Courses",
       value: courses.length.toString(),
-      icon: BookOpen,
+      icon: GalleryVerticalEnd,
       description: "Courses you have created",
     },
     {
@@ -152,7 +152,7 @@ export function InstructorDashboard() {
               ))}
               {courses.length === 0 && (
                 <div className="text-center py-8">
-                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <GalleryVerticalEnd className="mx-auto h-12 w-12 text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-semibold">No courses yet</h3>
                   <p className="text-muted-foreground mt-2">
                     Create your first course to start teaching.
@@ -173,7 +173,7 @@ export function InstructorDashboard() {
           <CardContent>
             <div className="space-y-4">
               <Button className="w-full justify-start" variant="outline">
-                <BookOpen className="mr-2 h-4 w-4" />
+                <GalleryVerticalEnd className="mr-2 h-4 w-4" />
                 Create New Course
               </Button>
               <Button className="w-full justify-start" variant="outline">

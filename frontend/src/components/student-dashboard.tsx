@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BookOpen, Clock, Star, TrendingUp } from "lucide-react";
+import { GalleryVerticalEnd, Clock, Star, TrendingUp } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -43,7 +43,7 @@ export function StudentDashboard() {
     {
       title: "Courses Enrolled",
       value: enrollments.length.toString(),
-      icon: BookOpen,
+      icon: GalleryVerticalEnd,
       description: "Total courses you are taking",
     },
     {
@@ -145,7 +145,7 @@ export function StudentDashboard() {
               ))}
               {enrollments.length === 0 && (
                 <div className="text-center py-8">
-                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <GalleryVerticalEnd className="mx-auto h-12 w-12 text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-semibold">No courses yet</h3>
                   <p className="text-muted-foreground mt-2">
                     Start your learning journey by enrolling in a course.

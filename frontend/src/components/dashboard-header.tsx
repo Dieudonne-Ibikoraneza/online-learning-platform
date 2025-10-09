@@ -53,13 +53,13 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
   };
 
   const getCurrentDate = () => {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
+    return new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
   // Role-specific welcome messages
   const getWelcomeMessage = () => {
@@ -93,7 +93,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
             {getHeaderTitle()}
           </h1>
           <p className="text-sm text-muted-foreground hidden sm:block">
-            {getWelcomeMessage()} * {getCurrentDate()}
+            {getWelcomeMessage()}
           </p>
         </div>
       </div>
@@ -124,9 +124,6 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                 <p className="text-sm font-medium leading-none">{user?.name}</p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email}
-                </p>
-                <p className="text-xs text-primary font-medium capitalize">
-                  {user?.role}
                 </p>
               </div>
             </DropdownMenuLabel>
