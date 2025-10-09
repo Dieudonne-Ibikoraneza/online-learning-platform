@@ -23,7 +23,7 @@ export default function SignupPage() {
       </div>
       <div className="bg-muted relative hidden lg:block">
         <Image
-          src="/placeholder.svg"
+          src="/placeholder.png"
           width={100}
           height={100}
           alt="Image"

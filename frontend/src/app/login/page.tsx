@@ -23,7 +23,7 @@ export default function LoginPage() {
       </div>
       <div className="bg-muted relative hidden lg:block">
         <Image
-          src="/placeholder.svg"
+          src="/placeholder.png"
           width={120}
           height={1920}
           alt="Image"

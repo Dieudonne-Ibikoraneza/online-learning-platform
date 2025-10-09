@@ -1,4 +1,4 @@
-// components/instructor-courses-list.tsx
+// components/instructor-courses-list.tsx - Updated with better error handling
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Plus,
   BookOpen,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,13 +30,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { coursesAPI } from "@/lib/api";
 import { Course } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 
 export function InstructorCoursesList() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchCourses();
@@ -43,10 +48,25 @@ export function InstructorCoursesList() {
 
   const fetchCourses = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+      console.log("Fetching instructor courses...");
+      
       const response = await coursesAPI.getInstructorCourses();
-      setCourses(response.data.data || []);
-    } catch (error) {
-      toast.error("Failed to load courses");
+      console.log("Instructor courses response:", response);
+      
+      if (response.data && response.data.success) {
+        const instructorCourses = response.data.data || [];
+        console.log("Instructor courses:", instructorCourses);
+        setCourses(instructorCourses);
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch courses");
+      }
+    } catch (error: any) {
+      console.error("Error fetching instructor courses:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to load courses";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -65,8 +85,9 @@ export function InstructorCoursesList() {
       toast.success(
         `Course ${currentStatus ? "unpublished" : "published"} successfully`
       );
-    } catch (error) {
-      toast.error("Failed to update course status");
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "Failed to update course status";
+      toast.error(errorMessage);
     }
   };
 
@@ -83,27 +104,59 @@ export function InstructorCoursesList() {
       await coursesAPI.deleteCourse(courseId);
       setCourses(courses.filter((course) => course._id !== courseId));
       toast.success("Course deleted successfully");
-    } catch (error) {
-      toast.error("Failed to delete course");
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || "Failed to delete course";
+      toast.error(errorMessage);
     }
   };
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">My Courses</h2>
+          <p className="text-muted-foreground">
+            Manage and track your published courses
+          </p>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={fetchCourses} className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4" />
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader className="p-0">
-              <Skeleton className="aspect-video w-full rounded-t-lg" />
-            </CardHeader>
-            <CardContent className="p-4">
-              <Skeleton className="h-4 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-1/2 mb-4" />
-              <Skeleton className="h-4 w-full mb-2" />
-              <Skeleton className="h-4 w-2/3" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">My Courses</h2>
+          <p className="text-muted-foreground">
+            Manage and track your published courses
+          </p>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="p-0">
+                <Skeleton className="aspect-video w-full rounded-t-lg" />
+              </CardHeader>
+              <CardContent className="p-4">
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2 mb-4" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-2/3" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -115,7 +168,7 @@ export function InstructorCoursesList() {
         <div>
           <h2 className="text-2xl font-bold">My Courses</h2>
           <p className="text-muted-foreground">
-            Manage and track your published courses
+            Manage and track your published courses ({courses.length} total)
           </p>
         </div>
         <Button asChild>

@@ -1,3 +1,4 @@
+// components/dashboard-sidebar.tsx - Update student nav items
 "use client";
 
 import { useState } from "react";
@@ -13,14 +14,16 @@ import {
   Video,
   Heart,
   X,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 
+// Updated student navigation - removed "My Courses", added "Browse Courses"
 const studentNavItems = [
   { href: "/dashboard", label: "Overview", icon: Home },
-  { href: "/dashboard/courses", label: "My Courses", icon: GalleryVerticalEnd },
+  { href: "/dashboard/courses", label: "Browse Courses", icon: Search }, // Changed from "My Courses" to "Browse Courses"
   { href: "/dashboard/enrolled", label: "Enrolled", icon: GraduationCap },
   { href: "/dashboard/favorites", label: "Favorites", icon: Heart },
   { href: "/dashboard/progress", label: "Progress", icon: BarChart3 },

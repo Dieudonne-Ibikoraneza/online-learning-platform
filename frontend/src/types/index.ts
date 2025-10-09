@@ -140,18 +140,19 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-// ADD THESE CONSTANTS - THEY'RE MISSING FROM YOUR FILE
 export const COURSE_CATEGORIES = [
-  "Programming",
-  "Design",
+  "Development",
   "Business",
+  "Design",
   "Marketing",
+  "IT & Software",
+  "Personal Development",
   "Photography",
   "Music",
   "Health & Fitness",
+  "Academics",
   "Language",
-  "Personal Development",
-  "Other",
+  "Test Preparation",
 ] as const;
 
 export const COURSE_DIFFICULTIES = [
@@ -162,12 +163,15 @@ export const COURSE_DIFFICULTIES = [
 
 export const COURSE_LANGUAGES = [
   "English",
-  "French",
   "Spanish",
+  "French",
   "German",
   "Chinese",
   "Japanese",
-  "Other",
+  "Arabic",
+  "Portuguese",
+  "Russian",
+  "Hindi",
 ] as const;
 
 // Add these additional types that are used in your components

@@ -1,11 +1,12 @@
-'use client';
+// app/dashboard/page.tsx - Update the student dashboard section
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { StudentDashboard } from '@/components/student-dashboard';
-import { InstructorDashboard } from '@/components/instructor-dashboard';
-import { AdminDashboard } from '@/components/admin-dashboard';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { StudentDashboard } from "@/components/student-dashboard";
+import { InstructorDashboard } from "@/components/instructor-dashboard";
+import { AdminDashboard } from "@/components/admin-dashboard";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
@@ -13,7 +14,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      router.push("/login");
     }
   }, [user, isLoading, router]);
 
@@ -31,7 +32,6 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Simplified header section since we now have role-specific titles in the main header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
@@ -49,9 +49,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Role-specific dashboard components */}
-      {user.role === 'student' && <StudentDashboard />}
-      {user.role === 'instructor' && <InstructorDashboard />}
-      {user.role === 'admin' && <AdminDashboard />}
+      {user.role === "student" && <StudentDashboard />}
+      {user.role === "instructor" && <InstructorDashboard />}
+      {user.role === "admin" && <AdminDashboard />}
     </div>
   );
 }

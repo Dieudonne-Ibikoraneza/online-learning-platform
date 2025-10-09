@@ -1,3 +1,4 @@
+// app/dashboard/courses/[id]/page.tsx - Updated with instructor logic
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,6 +16,7 @@ import {
   Video,
   Download,
   ArrowLeft,
+  Edit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +45,9 @@ export default function CourseDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Check if current user is the instructor of this course
+  const isCourseInstructor = user && course && course.instructor._id === user._id;
+
   useEffect(() => {
     if (courseId) {
       fetchCourseData();
@@ -59,8 +64,8 @@ export default function CourseDetailsPage() {
       setCourse(courseResponse.data.data);
       setRatings(ratingsResponse.data.data || []);
 
-      // Check enrollment status if user is logged in
-      if (user) {
+      // Check enrollment status if user is logged in and not the instructor
+      if (user && courseResponse.data.data.instructor._id !== user._id) {
         const enrollmentResponse = await enrollmentsAPI.getEnrollmentStatus(
           courseId
         );
@@ -115,10 +120,14 @@ export default function CourseDetailsPage() {
 
   const startLearning = () => {
     if (isEnrolled) {
-      router.push(`/dashboard/learn/${courseId}`);
+      router.push(`/learn/${courseId}`);
     } else {
       handleEnroll();
     }
+  };
+
+  const handleEditCourse = () => {
+    router.push(`/dashboard/courses/${courseId}/edit`);
   };
 
   if (isLoading) {
@@ -178,7 +187,7 @@ export default function CourseDetailsPage() {
         <div>
           <h1 className="text-2xl font-bold">Course Details</h1>
           <p className="text-muted-foreground">
-            View and manage course information
+            {isCourseInstructor ? "Manage your course" : "View course information"}
           </p>
         </div>
       </div>
@@ -201,9 +210,19 @@ export default function CourseDetailsPage() {
           {/* Course Title and Basic Info */}
           <div className="space-y-4">
             <div>
-              <Badge variant="secondary" className="mb-2">
-                {course.category}
-              </Badge>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary">
+                  {course.category}
+                </Badge>
+                {isCourseInstructor && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    Your Course
+                  </Badge>
+                )}
+                <Badge variant={course.isPublished ? "default" : "secondary"}>
+                  {course.isPublished ? "Published" : "Draft"}
+                </Badge>
+              </div>
               <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
               <p className="text-lg text-muted-foreground">
                 {course.description}
@@ -307,10 +326,18 @@ export default function CourseDetailsPage() {
 
             {/* Curriculum Tab */}
             <TabsContent value="curriculum" className="space-y-4">
-              <h3 className="text-xl font-semibold">
-                Course Content • {course.totalLessons} lessons •{" "}
-                {course.totalDuration} minutes
-              </h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">
+                  Course Content • {course.totalLessons} lessons •{" "}
+                  {course.totalDuration} minutes
+                </h3>
+                {isCourseInstructor && (
+                  <Button size="sm" onClick={handleEditCourse}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Lessons
+                  </Button>
+                )}
+              </div>
 
               {course.lessons && course.lessons.length > 0 ? (
                 <div className="border rounded-lg divide-y">
@@ -340,6 +367,11 @@ export default function CourseDetailsPage() {
                                     Free
                                   </Badge>
                                 )}
+                                {!lesson.isPublished && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Draft
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -357,7 +389,17 @@ export default function CourseDetailsPage() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No lessons available yet.
+                  {isCourseInstructor ? (
+                    <div className="space-y-4">
+                      <p>No lessons available yet.</p>
+                      <Button onClick={handleEditCourse}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Add Your First Lesson
+                      </Button>
+                    </div>
+                  ) : (
+                    "No lessons available yet."
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -378,7 +420,7 @@ export default function CourseDetailsPage() {
                   </div>
                 </div>
 
-                {isEnrolled && <Button>Write a Review</Button>}
+                {isEnrolled && !isCourseInstructor && <Button>Write a Review</Button>}
               </div>
 
               {ratings.length > 0 ? (
@@ -426,7 +468,11 @@ export default function CourseDetailsPage() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  No reviews yet. Be the first to review this course!
+                  {isCourseInstructor ? (
+                    "No reviews yet for your course."
+                  ) : (
+                    "No reviews yet. Be the first to review this course!"
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -454,15 +500,15 @@ export default function CourseDetailsPage() {
                     <div className="flex items-center gap-6 text-sm">
                       <div>
                         <div className="font-semibold">Total Students</div>
-                        <div className="text-muted-foreground">1,000+</div>
+                        <div className="text-muted-foreground">{course.totalStudents}</div>
                       </div>
                       <div>
                         <div className="font-semibold">Courses</div>
-                        <div className="text-muted-foreground">5</div>
+                        <div className="text-muted-foreground">1</div>
                       </div>
                       <div>
                         <div className="font-semibold">Reviews</div>
-                        <div className="text-muted-foreground">4.8/5</div>
+                        <div className="text-muted-foreground">{course.averageRating || "N/A"}/5</div>
                       </div>
                     </div>
                   </div>
@@ -472,7 +518,7 @@ export default function CourseDetailsPage() {
           </Tabs>
         </div>
 
-        {/* Sidebar - Enrollment Card */}
+        {/* Sidebar - Action Card */}
         <div className="space-y-4">
           <div className="border rounded-lg bg-background p-6 shadow-sm sticky top-6">
             {/* Price */}
@@ -480,30 +526,54 @@ export default function CourseDetailsPage() {
               {course.price === 0 ? "Free" : `$${course.price}`}
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Different for instructors vs students */}
             <div className="space-y-3">
-              <Button className="w-full" size="lg" onClick={startLearning}>
-                <Play className="h-4 w-4 mr-2" />
-                {isEnrolled ? "Continue Learning" : "Enroll Now"}
-              </Button>
+              {isCourseInstructor ? (
+                // Instructor Actions
+                <>
+                  <Button 
+                    className="w-full" 
+                    size="lg" 
+                    onClick={handleEditCourse}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Course
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => router.push(`/dashboard/courses/${courseId}/edit`)}
+                  >
+                    Manage Lessons
+                  </Button>
+                </>
+              ) : (
+                // Student Actions
+                <>
+                  <Button className="w-full" size="lg" onClick={startLearning}>
+                    <Play className="h-4 w-4 mr-2" />
+                    {isEnrolled ? "Continue Learning" : "Enroll Now"}
+                  </Button>
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={toggleFavorite}
-                >
-                  <Heart
-                    className={`h-4 w-4 mr-2 ${
-                      isFavorite ? "fill-red-500 text-red-500" : ""
-                    }`}
-                  />
-                  {isFavorite ? "Favorited" : "Favorite"}
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={toggleFavorite}
+                    >
+                      <Heart
+                        className={`h-4 w-4 mr-2 ${
+                          isFavorite ? "fill-red-500 text-red-500" : ""
+                        }`}
+                      />
+                      {isFavorite ? "Favorited" : "Favorite"}
+                    </Button>
+                    <Button variant="outline" size="icon">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Course Features */}
@@ -529,11 +599,40 @@ export default function CourseDetailsPage() {
               </div>
             </div>
 
-            {/* Guarantee */}
-            <div className="text-xs text-muted-foreground text-center mt-4">
-              30-day money-back guarantee
-            </div>
+            {/* Guarantee - Only show for students */}
+            {!isCourseInstructor && (
+              <div className="text-xs text-muted-foreground text-center mt-4">
+                30-day money-back guarantee
+              </div>
+            )}
           </div>
+
+          {/* Instructor Quick Stats */}
+          {isCourseInstructor && (
+            <div className="border rounded-lg bg-blue-50 p-4">
+              <h4 className="font-semibold mb-3 text-blue-900">Your Course Stats</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Students:</span>
+                  <span className="font-semibold">{course.totalStudents}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Rating:</span>
+                  <span className="font-semibold">{course.averageRating || "N/A"}/5</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Reviews:</span>
+                  <span className="font-semibold">{course.totalRatings || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Status:</span>
+                  <Badge variant={course.isPublished ? "default" : "secondary"}>
+                    {course.isPublished ? "Published" : "Draft"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
