@@ -9,6 +9,7 @@ import {
   Edit,
   Trash2,
   GripVertical,
+  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Course } from "@/types";
+import { coursesAPI } from "@/lib/api";
+import { Course, Lesson } from "@/types";
+import { LessonCreationModal } from "./lesson-creation-modal";
+import { LessonEditModal } from "./lesson-edit-modal";
 
 interface CourseLessonsManagerProps {
   course: Course;
@@ -32,31 +36,66 @@ export function CourseLessonsManager({
   onCourseUpdate,
 }: CourseLessonsManagerProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
 
-  const addNewLesson = () => {
-    const newLesson = {
-      title: "New Lesson",
-      content: "Add your lesson content here...",
-      duration: 0,
-      order: course.lessons.length,
-      isFree: false,
-      isPublished: true,
-    };
-
-    // In a real implementation, you would call an API here
-    toast.info(
-      "Lesson creation functionality will be implemented with API integration"
-    );
+  const fetchCourse = async () => {
+    try {
+      const response = await coursesAPI.getCourse(course._id);
+      onCourseUpdate(response.data.data);
+    } catch (error) {
+      toast.error("Failed to refresh course data");
+    }
   };
 
-  const deleteLesson = (lessonId: string) => {
-    if (!confirm("Are you sure you want to delete this lesson?")) {
+  const deleteLesson = async (lessonId: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this lesson? This action cannot be undone."
+      )
+    ) {
       return;
     }
-    toast.info(
-      "Lesson deletion functionality will be implemented with API integration"
-    );
+
+    setIsLoading(true);
+    try {
+      await coursesAPI.deleteLesson(course._id, lessonId);
+      toast.success("Lesson deleted successfully!");
+      await fetchCourse();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete lesson");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const toggleLessonPublish = async (
+    lessonId: string,
+    currentStatus: boolean
+  ) => {
+    setIsLoading(true);
+    try {
+      // Find the lesson to update
+      const lesson = course.lessons.find((l) => l._id === lessonId);
+      if (!lesson) return;
+
+      await coursesAPI.updateLesson(course._id, lessonId, {
+        ...lesson,
+        isPublished: !currentStatus,
+      });
+
+      toast.success(
+        `Lesson ${currentStatus ? "unpublished" : "published"} successfully!`
+      );
+      await fetchCourse();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update lesson");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sortedLessons = [...course.lessons].sort((a, b) => a.order - b.order);
 
   return (
     <div className="space-y-6">
@@ -67,15 +106,19 @@ export function CourseLessonsManager({
             Manage your course lessons and content
           </p>
         </div>
-        <Button onClick={addNewLesson} className="flex items-center gap-2">
+        <Button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2"
+          disabled={isLoading}
+        >
           <Plus className="h-4 w-4" />
           Add Lesson
         </Button>
       </div>
 
-      {course.lessons.length > 0 ? (
+      {sortedLessons.length > 0 ? (
         <div className="space-y-4">
-          {course.lessons.map((lesson, index) => (
+          {sortedLessons.map((lesson, index) => (
             <Card
               key={lesson._id}
               className="hover:shadow-md transition-shadow"
@@ -113,6 +156,8 @@ export function CourseLessonsManager({
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
+                      onClick={() => setEditingLesson(lesson)}
+                      disabled={isLoading}
                     >
                       <Edit className="h-4 w-4" />
                       Edit
@@ -120,8 +165,20 @@ export function CourseLessonsManager({
                     <Button
                       variant="outline"
                       size="sm"
+                      className="flex items-center gap-2"
+                      onClick={() =>
+                        toggleLessonPublish(lesson._id, lesson.isPublished)
+                      }
+                      disabled={isLoading}
+                    >
+                      {lesson.isPublished ? "Unpublish" : "Publish"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="flex items-center gap-2 text-destructive"
                       onClick={() => deleteLesson(lesson._id)}
+                      disabled={isLoading}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -147,6 +204,12 @@ export function CourseLessonsManager({
                     <span>Resources: {lesson.resources.length}</span>
                   </div>
                 </div>
+
+                {lesson.content && (
+                  <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                    <p className="text-sm line-clamp-2">{lesson.content}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -160,7 +223,11 @@ export function CourseLessonsManager({
               Start building your course by adding lessons. Each lesson can
               include video content, text, and resources.
             </p>
-            <Button onClick={addNewLesson} className="flex items-center gap-2">
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-2"
+              disabled={isLoading}
+            >
               <Plus className="h-4 w-4" />
               Create Your First Lesson
             </Button>
@@ -193,6 +260,26 @@ export function CourseLessonsManager({
           </div>
         </div>
       </div>
+
+      {/* Lesson Creation Modal */}
+      <LessonCreationModal
+        courseId={course._id}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onLessonCreated={fetchCourse}
+        nextOrder={course.lessons.length + 1}
+      />
+
+      {/* Lesson Edit Modal */}
+      {editingLesson && (
+        <LessonEditModal
+          courseId={course._id}
+          lesson={editingLesson}
+          isOpen={!!editingLesson}
+          onClose={() => setEditingLesson(null)}
+          onLessonUpdated={fetchCourse}
+        />
+      )}
     </div>
   );
 }

@@ -146,6 +146,18 @@ export const coursesAPI = {
 
   getInstructorCourses: () =>
     api.get<ApiResponse<Course[]>>("/courses/instructor/my-courses"),
+
+  addLesson: (courseId: string, data: any) =>
+    api.post<ApiResponse<Course>>(`/courses/${courseId}/lessons`, data),
+
+  updateLesson: (courseId: string, lessonId: string, data: any) =>
+    api.put<ApiResponse<Course>>(
+      `/courses/${courseId}/lessons/${lessonId}`,
+      data
+    ),
+
+  deleteLesson: (courseId: string, lessonId: string) =>
+    api.delete<ApiResponse>(`/courses/${courseId}/lessons/${lessonId}`),
 };
 
 // Enrollments API

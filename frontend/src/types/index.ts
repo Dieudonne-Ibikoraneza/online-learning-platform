@@ -207,3 +207,26 @@ export interface LessonFormData {
   isFree: boolean;
   isPublished: boolean;
 }
+
+export interface Resource {
+  _id: string;
+  name: string;
+  type: "pdf" | "video" | "image" | "document" | "link";
+  url: string;
+  public_id?: string;
+  size?: number;
+  duration?: number;
+  order: number;
+}
+
+// Add this new interface for file uploads
+export interface UploadResponse {
+  success: boolean;
+  message: string;
+  data: {
+    url: string;
+    public_id: string;
+    size?: number;
+    duration?: number;
+  };
+}
