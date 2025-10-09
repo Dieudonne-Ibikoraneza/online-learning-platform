@@ -128,7 +128,7 @@ export default function CourseEditPage() {
           </div>
           
           <Button variant="outline" size="sm" asChild>
-            <a href={`/courses/${courseId}`} target="_blank">
+            <a href={`/dashboard/courses/${courseId}`} target="_blank">
               View Live Course
             </a>
           </Button>
