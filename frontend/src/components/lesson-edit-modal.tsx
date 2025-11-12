@@ -26,7 +26,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Edit, Video, Upload, FileText, Image, Trash2, Download } from "lucide-react";
+import {
+  Edit,
+  Video,
+  Upload,
+  FileText,
+  Image,
+  Trash2,
+  Download,
+} from "lucide-react";
 import { toast } from "sonner";
 import { coursesAPI } from "@/lib/api";
 import { Lesson, Resource } from "@/types";
@@ -60,7 +68,9 @@ export function LessonEditModal({
   onLessonUpdated,
 }: LessonEditModalProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [resources, setResources] = useState<Resource[]>(lesson.resources || []);
+  const [resources, setResources] = useState<Resource[]>(
+    lesson.resources || []
+  );
   const [showResourceUpload, setShowResourceUpload] = useState(false);
 
   const form = useForm<LessonFormValues>({
@@ -78,37 +88,41 @@ export function LessonEditModal({
   const onSubmit = async (data: LessonFormValues) => {
     setIsLoading(true);
     try {
-      console.log('Updating lesson with data:', data);
-      console.log('Current resources:', resources);
-      
+      console.log("Updating lesson with data:", data);
+      console.log("Current resources:", resources);
+
       // Prepare resources for backend - remove _id field for new resources
-      const resourcesForBackend = resources.map(resource => {
+      const resourcesForBackend = resources.map((resource) => {
         // If it's a mock resource (starts with 'resource-'), remove the _id field
         // so MongoDB can generate a proper ObjectId
-        if (resource._id && resource._id.startsWith('resource-')) {
+        if (resource._id && resource._id.startsWith("resource-")) {
           const { _id, ...resourceWithoutId } = resource;
           return resourceWithoutId;
         }
         return resource;
       });
-      
+
       // Include resources in the update data
       const updateData = {
         ...data,
         resources: resourcesForBackend, // Send cleaned resources to backend
       };
-      
-      console.log('Sending to backend:', updateData);
-      
-      const response = await coursesAPI.updateLesson(courseId, lesson._id, updateData);
-      console.log('Lesson update response:', response);
-      
+
+      console.log("Sending to backend:", updateData);
+
+      const response = await coursesAPI.updateLesson(
+        courseId,
+        lesson._id,
+        updateData
+      );
+      console.log("Lesson update response:", response);
+
       toast.success("Lesson updated successfully!");
       onLessonUpdated();
       onClose();
     } catch (error: any) {
-      console.error('Lesson update error:', error);
-      console.error('Error details:', error.response?.data);
+      console.error("Lesson update error:", error);
+      console.error("Error details:", error.response?.data);
       toast.error(error.response?.data?.message || "Failed to update lesson");
     } finally {
       setIsLoading(false);
@@ -118,7 +132,9 @@ export function LessonEditModal({
   const handleVideoUpload = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toast.info("Video upload functionality will be implemented with Cloudinary integration");
+    toast.info(
+      "Video upload functionality will be implemented with Cloudinary integration"
+    );
   };
 
   const handleResourceUploaded = async (resource: Resource) => {
@@ -127,23 +143,28 @@ export function LessonEditModal({
       const newResources = [...resources, resource];
       setResources(newResources);
       setShowResourceUpload(false);
-      toast.success("Resource added successfully! Don't forget to save the lesson.");
+      toast.success(
+        "Resource added successfully! Don't forget to save the lesson."
+      );
     } catch (error) {
       toast.error("Failed to add resource");
     }
   };
 
-  const handleDeleteResource = async (resourceId: string, e: React.MouseEvent) => {
+  const handleDeleteResource = async (
+    resourceId: string,
+    e: React.MouseEvent
+  ) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!confirm("Are you sure you want to delete this resource?")) return;
-    
+
     try {
       // Remove from local state
-      const newResources = resources.filter(res => res._id !== resourceId);
+      const newResources = resources.filter((res) => res._id !== resourceId);
       setResources(newResources);
-      
+
       toast.success("Resource deleted successfully!");
     } catch (error) {
       toast.error("Failed to delete resource");
@@ -159,11 +180,11 @@ export function LessonEditModal({
   const handleDownloadResource = (resource: Resource, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const link = document.createElement('a');
+
+    const link = document.createElement("a");
     link.href = resource.url;
     link.download = resource.name;
-    link.target = '_blank';
+    link.target = "_blank";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -202,7 +223,8 @@ export function LessonEditModal({
             Edit Lesson
           </DialogTitle>
           <DialogDescription>
-            Update your lesson details, content, and resources. Resources will be saved when you click "Update Lesson".
+            Update your lesson details, content, and resources. Resources will
+            be saved when you click "Update Lesson".
           </DialogDescription>
         </DialogHeader>
 
@@ -213,7 +235,7 @@ export function LessonEditModal({
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
-                
+
                 <FormField
                   control={form.control}
                   name="title"
@@ -342,47 +364,6 @@ export function LessonEditModal({
                 </div>
               </div>
 
-              {/* Video Section */}
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Video className="h-4 w-4" />
-                    Lesson Video
-                  </h4>
-                  {lesson.video ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        {lesson.video.duration}m uploaded
-                      </span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleVideoUpload}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Replace
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleVideoUpload}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Video
-                    </Button>
-                  )}
-                </div>
-                {!lesson.video && (
-                  <p className="text-sm text-muted-foreground">
-                    No video uploaded yet. Add a video to enhance your lesson.
-                  </p>
-                )}
-              </div>
-
               {/* Resources Section */}
               <div className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
@@ -415,7 +396,7 @@ export function LessonEditModal({
                   <div className="space-y-2">
                     {resources.map((resource) => (
                       <div
-                        key={resource._id}
+                        key={resource.public_id}
                         className="flex items-center justify-between p-3 border rounded-lg"
                       >
                         <div className="flex items-center gap-3 flex-1">
@@ -433,11 +414,15 @@ export function LessonEditModal({
                               {resource.size && (
                                 <span>{formatFileSize(resource.size)}</span>
                               )}
-                              {resource._id && resource._id.startsWith('resource-') && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Unsaved
-                                </Badge>
-                              )}
+                              {resource._id &&
+                                resource._id.startsWith("resource-") && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    Unsaved
+                                  </Badge>
+                                )}
                             </div>
                           </div>
                         </div>
@@ -454,7 +439,9 @@ export function LessonEditModal({
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => handleDeleteResource(resource._id, e)}
+                            onClick={(e) =>
+                              handleDeleteResource(resource._id, e)
+                            }
                             className="text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -465,17 +452,20 @@ export function LessonEditModal({
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    No resources added yet. Add PDFs, images, or other files to enhance your lesson.
+                    No resources added yet. Add PDFs, images, or other files to
+                    enhance your lesson.
                   </p>
                 )}
 
                 {resources.length > 0 && (
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-700">
-                      💡 <strong>Remember:</strong> Resources will be saved to the lesson when you click "Update Lesson" below.
-                      {resources.some(r => r._id && r._id.startsWith('resource-')) && 
-                        " Unsaved resources will be properly saved to the database."
-                      }
+                      💡 <strong>Remember:</strong> Resources will be saved to
+                      the lesson when you click "Update Lesson" below.
+                      {resources.some(
+                        (r) => r._id && r._id.startsWith("resource-")
+                      ) &&
+                        " Unsaved resources will be properly saved to the database."}
                     </p>
                   </div>
                 )}

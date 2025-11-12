@@ -12,6 +12,7 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface Course {

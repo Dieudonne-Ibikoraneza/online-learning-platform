@@ -138,7 +138,7 @@ export default function EnrolledCoursesPage() {
               You haven&apos;t enrolled in any courses yet. Start your learning journey today!
             </p>
             <Button asChild>
-              <Link href="/courses">Browse Courses</Link>
+              <Link href="/dashboard/courses">Browse Courses</Link>
             </Button>
           </CardContent>
         </Card>

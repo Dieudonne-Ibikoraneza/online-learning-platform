@@ -1,7 +1,6 @@
-// components/course-media-manager.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Upload, Image, Video, File, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,8 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Course } from "@/types";
+import { coursesAPI } from "@/lib/api";
+import VideoPlayer from "@/components/video-player"
 
 interface CourseMediaManagerProps {
   course: Course;
@@ -23,40 +25,200 @@ export function CourseMediaManager({
   course,
   onCourseUpdate,
 }: CourseMediaManagerProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const handleThumbnailUpload = () => {
-    toast.info(
-      "Thumbnail upload functionality will be implemented with Cloudinary integration"
-    );
+  const getVideoDuration = (file: File) : Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      }
+
+      video.onerror= () => {
+        window.URL.revokeObjectURL(video.src);
+        reject("Error loading video metadata");
+      }
+
+      video.src = URL.createObjectURL(file);
+    })
+  }
+
+  const handleFileUpload = async (
+    file: File,
+    type: "thumbnail" | "promoVideo"
+  ) => {
+    if (!file) return;
+
+    setIsUploading(type);
+    setUploadProgress(0);
+
+    // Validate file type and size
+    if (type === "thumbnail") {
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        setIsUploading(null);
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB
+        toast.error("Image size must be less than 10MB");
+        setIsUploading(null);
+        return;
+      }
+    } else {
+      if (!file.type.startsWith("video/")) {
+        toast.error("Please select a video file");
+        setIsUploading(null);
+        return;
+      }
+      if (file.size > 500 * 1024 * 1024) { // 500MB
+        toast.error("Video size must be less than 500MB");
+        setIsUploading(null);
+        return;
+      }
+    }
+
+    try {
+      let duration : number | undefined;
+
+      if (type === "promoVideo") {
+        try {
+          duration = await getVideoDuration(file);
+          console.log("Video duration: ", duration, "seconds")
+        } catch (_) {
+          console.warn("Could not retrieve video duration")
+        }
+      }
+
+      const formData = new FormData();
+      formData.append(type === "thumbnail" ? "thumbnail" : "video", file);
+
+      if(duration) formData.append("duration", Math.round(duration).toString());
+      // Use your existing API endpoints
+      const apiCall = type === "thumbnail" 
+        ? coursesAPI.uploadThumbnail(course._id, formData)
+        : coursesAPI.uploadPromoVideo(course._id, formData);
+
+      // Simulate progress (in a real app, you'd use axios interceptors for actual progress)
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      const response = await apiCall;
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      onCourseUpdate(response.data.data);
+      toast.success(`${type === "thumbnail" ? "Thumbnail" : "Promo video"} uploaded successfully!`);
+      
+      // Reset after success
+      setTimeout(() => {
+        setIsUploading(null);
+        setUploadProgress(0);
+      }, 1000);
+
+    } catch (error: any) {
+      console.error("Upload failed:", error);
+      toast.error(error.response?.data?.message || `Failed to upload ${type}`);
+      setIsUploading(null);
+      setUploadProgress(0);
+    }
   };
 
-  const handlePromoVideoUpload = () => {
-    toast.info(
-      "Promo video upload functionality will be implemented with Cloudinary integration"
-    );
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    type: "thumbnail" | "promoVideo"
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    await handleFileUpload(file, type);
+    
+    // Reset file input
+    if (event.target) event.target.value = "";
   };
 
-  const deleteThumbnail = () => {
-    if (!confirm("Are you sure you want to delete the thumbnail?")) {
+  const deleteMedia = async (type: "thumbnail" | "promoVideo") => {
+    if (!confirm(`Are you sure you want to delete the ${type}?`)) {
       return;
     }
-    toast.info(
-      "Thumbnail deletion functionality will be implemented with API integration"
-    );
+
+    try {
+      // For deletion, we'll update the course with null values
+      const updateData = type === "thumbnail" 
+        ? { thumbnail: null }
+        : { promoVideo: null };
+
+      const response = await coursesAPI.updateCourse(course._id, updateData);
+      onCourseUpdate(response.data.data);
+      
+      toast.success(`${type === "thumbnail" ? "Thumbnail" : "Promo video"} deleted successfully!`);
+    } catch (error: any) {
+      console.error("Delete failed:", error);
+      toast.error(error.response?.data?.message || `Failed to delete ${type}`);
+    }
   };
 
-  const deletePromoVideo = () => {
-    if (!confirm("Are you sure you want to delete the promo video?")) {
-      return;
+  const triggerFileInput = (type: "thumbnail" | "promoVideo") => {
+    if (type === "thumbnail") {
+      thumbnailInputRef.current?.click();
+    } else {
+      videoInputRef.current?.click();
     }
-    toast.info(
-      "Promo video deletion functionality will be implemented with API integration"
-    );
   };
+
+  // Hidden file inputs
+  const renderFileInputs = () => (
+    <>
+      <input
+        type="file"
+        ref={thumbnailInputRef}
+        onChange={(e) => handleFileSelect(e, "thumbnail")}
+        accept="image/*"
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={videoInputRef}
+        onChange={(e) => handleFileSelect(e, "promoVideo")}
+        accept="video/*"
+        className="hidden"
+      />
+    </>
+  );
+
+  const formatDuration = (seconds: number) =>{
+    if(!seconds) return "0:00"
+
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const formatMinutes = (seconds:number) => {
+    if(!seconds) return "0 minutes";
+
+    const minutes = Math.round(seconds / 60);
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`
+  }
 
   return (
     <div className="space-y-6">
+      {renderFileInputs()}
+      
       <div>
         <h2 className="text-2xl font-bold">Course Media</h2>
         <p className="text-muted-foreground">
@@ -73,11 +235,20 @@ export function CourseMediaManager({
               Course Thumbnail
             </CardTitle>
             <CardDescription>
-              Upload a compelling thumbnail image for your course (Recommended:
-              800x450px)
+              Upload a compelling thumbnail image for your course (Recommended: 800x450px)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {isUploading === "thumbnail" && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Uploading thumbnail...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
+            
             {course.thumbnail?.url ? (
               <div className="space-y-4">
                 <div className="aspect-video rounded-lg border overflow-hidden">
@@ -87,7 +258,7 @@ export function CourseMediaManager({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" size="sm" asChild>
                     <a
                       href={course.thumbnail.url}
@@ -101,7 +272,8 @@ export function CourseMediaManager({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleThumbnailUpload}
+                    onClick={() => triggerFileInput("thumbnail")}
+                    disabled={!!isUploading}
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Replace
@@ -109,8 +281,9 @@ export function CourseMediaManager({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={deleteThumbnail}
+                    onClick={() => deleteMedia("thumbnail")}
                     className="text-destructive"
+                    disabled={!!isUploading}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
@@ -124,8 +297,9 @@ export function CourseMediaManager({
                   No thumbnail uploaded
                 </p>
                 <Button
-                  onClick={handleThumbnailUpload}
+                  onClick={() => triggerFileInput("thumbnail")}
                   className="flex items-center gap-2"
+                  disabled={!!isUploading}
                 >
                   <Upload className="h-4 w-4" />
                   Upload Thumbnail
@@ -147,18 +321,42 @@ export function CourseMediaManager({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {isUploading === "promoVideo" && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Uploading video...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
+            
             {course.promoVideo?.url ? (
               <div className="space-y-4">
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                  <Video className="h-12 w-12 text-muted-foreground" />
+                <div className="aspect-video bg-black rounded-lg flex items-center justify-center relative">
+                  <VideoPlayer
+                    src={course.promoVideo.url}
+                    duration={course.promoVideo.duration}
+                  />
                 </div>
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
                     <span>Duration:</span>
-                    <span>{course.promoVideo.duration} seconds</span>
+                    <span>
+                      {course.promoVideo.duration ? 
+                          `${formatDuration(course.promoVideo.duration)}`
+                          : "Duration not available"
+                      }
+                    </span>
                   </div>
+                  {course.promoVideo.duration && (
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Format: </span>
+                        <span>{course.promoVideo.url.split('.').pop()?.toUpperCase()}</span>
+                      </div>
+                  )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" size="sm" asChild>
                     <a
                       href={course.promoVideo.url}
@@ -172,7 +370,8 @@ export function CourseMediaManager({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handlePromoVideoUpload}
+                    onClick={() => triggerFileInput("promoVideo")}
+                    disabled={!!isUploading}
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Replace
@@ -180,8 +379,9 @@ export function CourseMediaManager({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={deletePromoVideo}
+                    onClick={() => deleteMedia("promoVideo")}
                     className="text-destructive"
+                    disabled={!!isUploading}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
@@ -195,8 +395,9 @@ export function CourseMediaManager({
                   No promotional video uploaded
                 </p>
                 <Button
-                  onClick={handlePromoVideoUpload}
+                  onClick={() => triggerFileInput("promoVideo")}
                   className="flex items-center gap-2"
+                  disabled={!!isUploading}
                 >
                   <Upload className="h-4 w-4" />
                   Upload Video

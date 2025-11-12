@@ -52,13 +52,13 @@ export function StudentDashboard() {
     },
     {
       title: "Learning Hours",
-      value: "12.5",
+      value: "46",
       icon: Clock,
       description: "Time spent learning this week",
     },
     {
       title: "Average Rating",
-      value: "4.8",
+      value: "5",
       icon: Star,
       description: "Your course ratings",
     },

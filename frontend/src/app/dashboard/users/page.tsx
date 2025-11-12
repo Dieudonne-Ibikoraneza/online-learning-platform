@@ -8,7 +8,7 @@ import {
   User,
   Shield,
   UserCheck,
-  UserX,
+  UserX, Trash2, Download
 } from "lucide-react";
 import {
   Table,
@@ -50,6 +50,38 @@ export default function AdminUsersPage() {
     }
   };
 
+  const exportUsersToCSV = () => {
+    if(users.length === 0)
+      toast.error("No users to export");
+
+    const headers = ["Name", "Email", "Role", "Status", "Joined Date", "Active", "Deleted At"];
+
+    const rows = users.map(user => [
+        `${user.name}`,
+        `${user.email}`,
+        `${user.role}`,
+        `${user.deletedAt ? "Deleted" : user.isActive ? "Active" : "Inactive"}`,
+        `${new Date(user.createdAt).toLocaleDateString()}`,
+        `${user.isActive}`,
+        `${user.deletedAt ? new Date(user.deletedAt).toLocaleDateString() : user.isActive ? "Active" : "Inactive"}`
+    ])
+
+    const content = [ headers.join(","), ...rows.map(row => row.join(",") )].join("\n");
+
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href=url;
+    a.download = `users-export-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    toast.success("Successfully exported!");
+  }
+
   const updateUserRole = async (userId: string, role: string) => {
     try {
       await adminAPI.updateUserRole(userId, role);
@@ -75,6 +107,22 @@ export default function AdminUsersPage() {
       toast.error("Failed to update user status");
     }
   };
+
+  const deleteProfile = async (userId: string) => {
+
+    if(!confirm("Are you sure you want to delete this user? This action cannot be undone."))
+      return;
+
+    try {
+      await adminAPI.deleteProfile(userId);
+
+      setUsers(users.filter(user => user._id !== userId))
+
+      toast.success("User deleted successfully")
+    } catch (_) {
+      toast.error("Failed to delete the user account");
+    }
+  }
 
   const getRoleBadge = (role: string) => {
     const variants = {
@@ -135,7 +183,10 @@ export default function AdminUsersPage() {
             Manage platform users and permissions
           </p>
         </div>
-        <Button>Export Users</Button>
+        <Button onClick={exportUsersToCSV} className="flex items-center gap-2">
+          <Download className="w-4 h-4" />
+          Export Users
+        </Button>
       </div>
 
       <div className="border rounded-lg">
@@ -221,6 +272,14 @@ export default function AdminUsersPage() {
                             Activate
                           </>
                         )}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                          onClick={() => deleteProfile(user._id)}
+                          className="flex items-center gap-2 text-red-600 font-bold"
+                          disabled={!!user.deletedAt}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                        Delete Account
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

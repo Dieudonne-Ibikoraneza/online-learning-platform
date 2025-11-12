@@ -262,6 +262,8 @@ export const adminAPI = {
   deleteCourse: (courseId: string) =>
     api.delete<ApiResponse>(`/admin/courses/${courseId}`),
 
+  deleteProfile: (id:string) => api.delete<ApiResponse<User>>(`/users/${id}`),
+
   getEnrollmentStats: (period?: string) =>
     api.get<ApiResponse>(
       `/admin/enrollments/stats?period=${period || "month"}`

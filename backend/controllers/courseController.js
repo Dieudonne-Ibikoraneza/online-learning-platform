@@ -453,7 +453,6 @@ const updateLesson = async (req, res, next) => {
       });
     }
 
-    // Find lesson index
     const lessonIndex = course.lessons.findIndex(
       (lesson) => lesson._id.toString() === req.params.lessonId
     );
@@ -465,13 +464,20 @@ const updateLesson = async (req, res, next) => {
       });
     }
 
-    // Update lesson
+    // Update lesson fields including resources
     course.lessons[lessonIndex] = {
       ...course.lessons[lessonIndex].toObject(),
       ...req.body,
+      // Resources will be included in req.body if sent from frontend
     };
 
+    console.log(
+      "Updated lesson resources:",
+      course.lessons[lessonIndex].resources
+    );
+
     await course.save();
+    await course.populate("instructor", "name email avatar");
 
     res.json({
       success: true,

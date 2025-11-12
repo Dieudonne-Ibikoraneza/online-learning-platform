@@ -85,7 +85,7 @@ export function DashboardSidebar({
           <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b">
             <div className="flex items-center">
               <GalleryVerticalEnd className="h-8 w-8 text-primary" />
-              <span className="ml-2 text-xl font-bold">LearnHub</span>
+              <span className="ml-2 text-xl font-bold">Learn Hub.</span>
             </div>
             <Button
               variant="ghost"

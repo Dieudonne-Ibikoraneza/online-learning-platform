@@ -191,7 +191,7 @@ export function AdminDashboard() {
                   <div key={index} className="flex items-center space-x-3 text-sm">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <div className="flex-1">
-                      <span className="font-medium">{enrollment.student.name}</span>
+                      <span className="font-medium">{enrollment.stud}</span>
                       <span className="text-muted-foreground"> enrolled in </span>
                       <span className="font-medium">{enrollment.course.title}</span>
                     </div>

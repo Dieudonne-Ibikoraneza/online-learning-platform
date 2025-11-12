@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, GalleryVerticalEnd, DollarSign, TrendingUp } from "lucide-react";
+import {
+  Users,
+  GalleryVerticalEnd,
+  DollarSign,
+  TrendingUp,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { coursesAPI } from "@/lib/api";
 import { Course } from "@/types";
+import Link from "next/link";
 
 export function InstructorDashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -123,7 +129,9 @@ export function InstructorDashboard() {
                 Manage and track your published courses
               </CardDescription>
             </div>
-            <Button>Create Course</Button>
+            <Button>
+              <Link href="/dashboard/create-course">Create course</Link>
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
