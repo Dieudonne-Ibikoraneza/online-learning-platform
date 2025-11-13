@@ -209,6 +209,13 @@ const uploadResource = async (req, res, next) => {
       });
     }
 
+    console.log('File received:', {
+      fieldname: req.file.fieldname,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+
     const course = await Course.findOne({ 
       _id: req.params.courseId, 
       deletedAt: null 
@@ -267,6 +274,10 @@ const uploadResource = async (req, res, next) => {
     } else if (req.file.mimetype === 'application/pdf') {
       resourceType = 'raw';
       folder = 'online-learning-platform/resource-pdfs';
+    } else {
+      // For other document types
+      resourceType = 'raw';
+      folder = 'online-learning-platform/resource-documents';
     }
 
     // Convert buffer to base64 for Cloudinary
@@ -275,7 +286,9 @@ const uploadResource = async (req, res, next) => {
     // Upload to Cloudinary
     const uploadOptions = {
       folder: folder,
-      resource_type: resourceType
+      resource_type: resourceType,
+      // Add unique public_id to avoid conflicts
+      public_id: `resource_${Date.now()}_${Math.random().toString(36).substring(7)}`
     };
 
     // Add specific options for different file types
@@ -283,14 +296,15 @@ const uploadResource = async (req, res, next) => {
       uploadOptions.quality = 'auto';
       uploadOptions.fetch_format = 'auto';
     } else if (resourceType === 'video') {
-      uploadOptions.chunk_size = 6000000;
+      uploadOptions.chunk_size = 7000000;
     }
 
     const result = await cloudinary.uploader.upload(fileStr, uploadOptions);
 
     console.log('Resource uploaded successfully:', {
       public_id: result.public_id,
-      url: result.secure_url
+      url: result.secure_url,
+      resource_type: result.resource_type
     });
 
     // Create resource object
@@ -322,6 +336,15 @@ const uploadResource = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Resource upload error:', error);
+    
+    // Handle Cloudinary specific errors
+    if (error.message && error.message.includes('Invalid image file')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file format. Please upload a valid file.'
+      });
+    }
+    
     next(error);
   }
 };

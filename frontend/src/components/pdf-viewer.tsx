@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import {useState, useRef, useEffect, JSX} from "react";
 import {
     ZoomIn,
     ZoomOut,
@@ -32,6 +32,7 @@ const PDFViewer = ({ src, fileName = "document.pdf" }: PDFViewerProps) => {
     const pdfDocRef = useRef<any>(null);
     const renderTasksRef = useRef<Map<number, any>>(new Map());
     const instanceIdRef = useRef(`pdf-${Math.random().toString(36).substr(2, 9)}`);
+
 
     // PDF.js setup
     useEffect(() => {

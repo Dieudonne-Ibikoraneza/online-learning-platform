@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import {
   ApiResponse,
@@ -159,7 +160,16 @@ export const coursesAPI = {
   deleteLesson: (courseId: string, lessonId: string) =>
     api.delete<ApiResponse>(`/courses/${courseId}/lessons/${lessonId}`),
 
-    uploadResource: (courseId: string, lessonId: string, formData: FormData) =>
+  uploadLessonVideo: (courseId: string, lessonId: string, formData: FormData) =>
+    api.put<ApiResponse<Course>>(
+      `/courses/${courseId}/lessons/${lessonId}/video`,
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+      }
+    ),
+
+  uploadResource: (courseId: string, lessonId: string, formData: FormData) =>
     api.post<ApiResponse<Course>>(
       `/courses/${courseId}/lessons/${lessonId}/resources`,
       formData,
@@ -262,7 +272,7 @@ export const adminAPI = {
   deleteCourse: (courseId: string) =>
     api.delete<ApiResponse>(`/admin/courses/${courseId}`),
 
-  deleteProfile: (id:string) => api.delete<ApiResponse<User>>(`/users/${id}`),
+  deleteProfile: (id: string) => api.delete<ApiResponse<User>>(`/users/${id}`),
 
   getEnrollmentStats: (period?: string) =>
     api.get<ApiResponse>(

@@ -1,8 +1,8 @@
-// components/lesson-edit-modal.tsx - Fix resource ID issue
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { LessonFormValues } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -34,11 +34,11 @@ import {
   Image,
   Trash2,
   Download,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { coursesAPI } from "@/lib/api";
 import { Lesson, Resource } from "@/types";
-import { ResourceUpload } from "./resource-upload";
 import { Badge } from "@/components/ui/badge";
 
 const lessonSchema = z.object({
@@ -49,8 +49,6 @@ const lessonSchema = z.object({
   isFree: z.boolean().default(false),
   isPublished: z.boolean().default(true),
 });
-
-type LessonFormValues = z.infer<typeof lessonSchema>;
 
 interface LessonEditModalProps {
   courseId: string;
@@ -71,7 +69,14 @@ export function LessonEditModal({
   const [resources, setResources] = useState<Resource[]>(
     lesson.resources || []
   );
-  const [showResourceUpload, setShowResourceUpload] = useState(false);
+  const [lessonVideo, setLessonVideo] = useState(lesson.video);
+  const [isUploadingResource, setIsUploadingResource] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentUploadFile, setCurrentUploadFile] = useState<string>("");
+
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const resourceInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<LessonFormValues>({
     resolver: zodResolver(lessonSchema),
@@ -88,66 +93,174 @@ export function LessonEditModal({
   const onSubmit = async (data: LessonFormValues) => {
     setIsLoading(true);
     try {
-      console.log("Updating lesson with data:", data);
-      console.log("Current resources:", resources);
-
-      // Prepare resources for backend - remove _id field for new resources
-      const resourcesForBackend = resources.map((resource) => {
-        // If it's a mock resource (starts with 'resource-'), remove the _id field
-        // so MongoDB can generate a proper ObjectId
-        if (resource._id && resource._id.startsWith("resource-")) {
-          const { _id, ...resourceWithoutId } = resource;
-          return resourceWithoutId;
-        }
-        return resource;
-      });
-
-      // Include resources in the update data
-      const updateData = {
-        ...data,
-        resources: resourcesForBackend, // Send cleaned resources to backend
-      };
-
-      console.log("Sending to backend:", updateData);
-
       const response = await coursesAPI.updateLesson(
         courseId,
         lesson._id,
-        updateData
+        data
       );
-      console.log("Lesson update response:", response);
-
       toast.success("Lesson updated successfully!");
       onLessonUpdated();
       onClose();
     } catch (error: any) {
       console.error("Lesson update error:", error);
-      console.error("Error details:", error.response?.data);
       toast.error(error.response?.data?.message || "Failed to update lesson");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleVideoUpload = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toast.info(
-      "Video upload functionality will be implemented with Cloudinary integration"
-    );
+  // Handle video upload
+  const handleVideoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("video/")) {
+      toast.error("Please select a valid video file");
+      return;
+    }
+
+    // Validate file size (max 500MB for videos)
+    const maxSize = 500 * 1024 * 1024; // 500MB
+    if (file.size > maxSize) {
+      toast.error("Video file size must be less than 500MB");
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    setUploadProgress(0);
+    setCurrentUploadFile(file.name);
+
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 500);
+
+      const response = await coursesAPI.uploadLessonVideo(
+        courseId,
+        lesson._id,
+        formData
+      );
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Update local state with new video
+      const updatedLesson = response.data.data.lessons.find(
+        (l: Lesson) => l._id === lesson._id
+      );
+      if (updatedLesson?.video) {
+        setLessonVideo(updatedLesson.video);
+        
+        // Update duration if video has duration
+        if (updatedLesson.video.duration) {
+          form.setValue("duration", updatedLesson.video.duration);
+        }
+      }
+
+      toast.success("Video uploaded successfully!");
+
+      // Reset file input
+      if (event.target) event.target.value = "";
+    } catch (error: any) {
+      console.error("Video upload failed:", error);
+      toast.error(error.response?.data?.message || "Failed to upload video");
+    } finally {
+      setTimeout(() => {
+        setIsUploadingVideo(false);
+        setUploadProgress(0);
+        setCurrentUploadFile("");
+      }, 1000);
+    }
   };
 
-  const handleResourceUploaded = async (resource: Resource) => {
+  // Handle resource upload (PDF, images, documents)
+  const handleResourceUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      toast.error("File size must be less than 100MB");
+      return;
+    }
+
+    setIsUploadingResource(true);
+    setUploadProgress(0);
+    setCurrentUploadFile(file.name);
+
     try {
-      // Add the resource to local state
-      const newResources = [...resources, resource];
-      setResources(newResources);
-      setShowResourceUpload(false);
-      toast.success(
-        "Resource added successfully! Don't forget to save the lesson."
+      const formData = new FormData();
+
+      // Determine resource type based on file type
+      let resourceType: "pdf" | "image" | "document" = "document";
+      if (file.type.startsWith("image/")) {
+        resourceType = "image";
+      } else if (file.type === "application/pdf") {
+        resourceType = "pdf";
+      }
+
+      // Append the file with consistent field name 'file' (matches backend multer config)
+      formData.append("file", file);
+      formData.append("name", file.name);
+      formData.append("type", resourceType);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 300);
+
+      const response = await coursesAPI.uploadResource(
+        courseId,
+        lesson._id,
+        formData
       );
-    } catch (error) {
-      toast.error("Failed to add resource");
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      // Update local state with new resource
+      const updatedLesson = response.data.data.course.lessons.find(
+        (l: Lesson) => l._id === lesson._id
+      );
+      if (updatedLesson?.resources) {
+        setResources(updatedLesson.resources);
+      }
+
+      toast.success("Resource uploaded successfully!");
+
+      // Reset file input
+      if (event.target) event.target.value = "";
+    } catch (error: any) {
+      console.error("Resource upload failed:", error);
+      toast.error(error.response?.data?.message || "Failed to upload resource");
+    } finally {
+      setTimeout(() => {
+        setIsUploadingResource(false);
+        setUploadProgress(0);
+        setCurrentUploadFile("");
+      }, 1000);
     }
   };
 
@@ -161,20 +274,29 @@ export function LessonEditModal({
     if (!confirm("Are you sure you want to delete this resource?")) return;
 
     try {
+      await coursesAPI.deleteResource(courseId, lesson._id, resourceId);
+      
       // Remove from local state
-      const newResources = resources.filter((res) => res._id !== resourceId);
-      setResources(newResources);
-
+      setResources((prev) => prev.filter((res) => res._id !== resourceId));
+      
       toast.success("Resource deleted successfully!");
-    } catch (error) {
-      toast.error("Failed to delete resource");
+    } catch (error: any) {
+      console.error("Resource deletion failed:", error);
+      toast.error(error.response?.data?.message || "Failed to delete resource");
     }
   };
 
-  const handleToggleResourceUpload = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowResourceUpload(!showResourceUpload);
+  const handleDeleteVideo = async () => {
+    if (!confirm("Are you sure you want to delete this video?")) return;
+
+    try {
+      await coursesAPI.deleteLessonVideo(courseId, lesson._id);
+      setLessonVideo(undefined);
+      toast.success("Video deleted successfully!");
+    } catch (error: any) {
+      console.error("Video deletion failed:", error);
+      toast.error(error.response?.data?.message || "Failed to delete video");
+    }
   };
 
   const handleDownloadResource = (resource: Resource, e: React.MouseEvent) => {
@@ -185,6 +307,7 @@ export function LessonEditModal({
     link.href = resource.url;
     link.download = resource.name;
     link.target = "_blank";
+    link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -210,12 +333,15 @@ export function LessonEditModal({
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
-  const handleClose = () => {
-    onClose();
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return "";
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
@@ -223,10 +349,27 @@ export function LessonEditModal({
             Edit Lesson
           </DialogTitle>
           <DialogDescription>
-            Update your lesson details, content, and resources. Resources will
-            be saved when you click "Update Lesson".
+            Update your lesson details, content, video, and resources.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Hidden file inputs */}
+        <input
+          type="file"
+          ref={videoInputRef}
+          onChange={handleVideoUpload}
+          accept="video/*"
+          className="hidden"
+          disabled={isUploadingVideo}
+        />
+        <input
+          type="file"
+          ref={resourceInputRef}
+          onChange={handleResourceUpload}
+          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+          className="hidden"
+          disabled={isUploadingResource}
+        />
 
         {/* Scrollable form content */}
         <div className="flex-1 overflow-y-auto pr-2 -mr-2">
@@ -364,6 +507,83 @@ export function LessonEditModal({
                 </div>
               </div>
 
+              {/* Video Section */}
+              <div className="border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Video className="h-4 w-4" />
+                    Lesson Video
+                  </h4>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => videoInputRef.current?.click()}
+                    disabled={isUploadingVideo}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {lessonVideo ? "Replace Video" : "Upload Video"}
+                  </Button>
+                </div>
+
+                {isUploadingVideo && (
+                  <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="truncate mr-2">
+                          Uploading {currentUploadFile}...
+                        </span>
+                        <span className="font-semibold">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {lessonVideo ? (
+                  <div className="space-y-3">
+                    <video
+                      src={lessonVideo.url}
+                      controls
+                      className="w-full rounded-lg"
+                    />
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium">Current Video</p>
+                        <p className="text-xs text-muted-foreground">
+                          Duration: {formatDuration(lessonVideo.duration)}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDeleteVideo}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 px-4 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                    <Video className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      No video uploaded yet
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Upload a video to enhance your lesson
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Resources Section */}
               <div className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
@@ -375,20 +595,30 @@ export function LessonEditModal({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={handleToggleResourceUpload}
+                    onClick={() => resourceInputRef.current?.click()}
+                    disabled={isUploadingResource}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    {showResourceUpload ? "Cancel" : "Add Resource"}
+                    {isUploadingResource ? "Uploading..." : "Add Resource"}
                   </Button>
                 </div>
 
-                {showResourceUpload && (
+                {isUploadingResource && (
                   <div className="mb-4 p-4 bg-muted/50 rounded-lg">
-                    <ResourceUpload
-                      courseId={courseId}
-                      lessonId={lesson._id}
-                      onResourceUploaded={handleResourceUploaded}
-                    />
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="truncate mr-2">
+                          Uploading {currentUploadFile}...
+                        </span>
+                        <span className="font-semibold">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -396,42 +626,34 @@ export function LessonEditModal({
                   <div className="space-y-2">
                     {resources.map((resource) => (
                       <div
-                        key={resource.public_id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
+                        key={resource._id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
                       >
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="text-muted-foreground">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="text-muted-foreground flex-shrink-0">
                             {getResourceIcon(resource.type)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">
                               {resource.name}
                             </p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                               <Badge variant="outline" className="text-xs">
                                 {resource.type.toUpperCase()}
                               </Badge>
                               {resource.size && (
                                 <span>{formatFileSize(resource.size)}</span>
                               )}
-                              {resource._id &&
-                                resource._id.startsWith("resource-") && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    Unsaved
-                                  </Badge>
-                                )}
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={(e) => handleDownloadResource(resource, e)}
+                            title="Download resource"
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -442,7 +664,8 @@ export function LessonEditModal({
                             onClick={(e) =>
                               handleDeleteResource(resource._id, e)
                             }
-                            className="text-destructive"
+                            className="text-destructive hover:text-destructive"
+                            title="Delete resource"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -451,21 +674,13 @@ export function LessonEditModal({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No resources added yet. Add PDFs, images, or other files to
-                    enhance your lesson.
-                  </p>
-                )}
-
-                {resources.length > 0 && (
-                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                      💡 <strong>Remember:</strong> Resources will be saved to
-                      the lesson when you click "Update Lesson" below.
-                      {resources.some(
-                        (r) => r._id && r._id.startsWith("resource-")
-                      ) &&
-                        " Unsaved resources will be properly saved to the database."}
+                  <div className="text-center py-8 px-4 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      No resources added yet
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Add PDFs, images, or other files to enhance your lesson
                     </p>
                   </div>
                 )}
@@ -477,12 +692,15 @@ export function LessonEditModal({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={handleClose}
-                    disabled={isLoading}
+                    onClick={onClose}
+                    disabled={isLoading || isUploadingResource || isUploadingVideo}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isLoading}>
+                  <Button
+                    type="submit"
+                    disabled={isLoading || isUploadingResource || isUploadingVideo}
+                  >
                     {isLoading ? "Updating..." : "Update Lesson"}
                   </Button>
                 </DialogFooter>

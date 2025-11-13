@@ -25,6 +25,7 @@ const {
   uploadThumbnail: thumbnailUpload,
   uploadVideo,
   uploadResource: resourceUpload,
+  handleMulterError
 } = require("../middleware/uploadMiddleware");
 
 const router = express.Router();
@@ -74,7 +75,7 @@ router.delete("/:courseId/lessons/:lessonId/video", deleteLessonVideo);
 // Resource routes
 router.post(
   "/:courseId/lessons/:lessonId/resources",
-  resourceUpload.single("resource"),
+  resourceUpload.single("file"), handleMulterError,
   uploadResource
 );
 router.delete(

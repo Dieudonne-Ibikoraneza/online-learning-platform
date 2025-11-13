@@ -103,6 +103,7 @@ export interface Rating {
   updatedAt: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
@@ -212,6 +213,15 @@ export interface LessonFormData {
   isFree: boolean;
   isPublished: boolean;
 }
+
+export type LessonFormValues = {
+  title: string;
+  content: string;
+  duration: number;
+  order: number;
+  isFree: boolean;
+  isPublished: boolean;
+};
 
 export interface Resource {
   _id: string;

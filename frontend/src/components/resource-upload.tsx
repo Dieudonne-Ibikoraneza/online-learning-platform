@@ -20,7 +20,21 @@ export function ResourceUpload({
   courseId,
   lessonId,
   onResourceUploaded,
-  allowedTypes = ["application/pdf", "image/*", "video/*"],
+  allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'video/mp4',
+      'video/webm',
+      'application/msword', // .doc
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      'application/vnd.ms-excel', // .xls
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-powerpoint', // .ppt
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+    ],
   maxSize = 50 * 1024 * 1024, // 50MB default
 }: ResourceUploadProps) {
   const [isUploading, setIsUploading] = useState(false);

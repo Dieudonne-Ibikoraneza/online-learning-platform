@@ -13,7 +13,7 @@ import {
   Menu,
   X,
   File,
-  Download,
+  Download, Image
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import VideoPlayer from "@/components/video-player"
 import PDFViewer from "@/components/pdf-viewer"
+
 
 export default function LearnPage() {
   const params = useParams();
@@ -291,6 +292,7 @@ export default function LearnPage() {
                     </div>
                   </div>
 
+                  {/* Resources */}
                   {currentLesson.resources && currentLesson.resources.length > 0 && (
                       <div className="mb-8">
                         <h3 className="text-xl font-semibold mb-4">Lesson Resources</h3>
@@ -301,9 +303,11 @@ export default function LearnPage() {
                                 <div className="flex p-4 items-center justify-between">
                                   <div className="flex items-start gap-3">
                                     {resource.type === 'pdf' ? (
-                                        <File className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                                        <File className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                                     ) : resource.type === 'video' ? (
                                         <Play className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                                    ) : resource.type === 'image' ? (
+                                        <Image className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                                     ) : (
                                         <BookOpen className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                                     )}
@@ -327,15 +331,54 @@ export default function LearnPage() {
                                   </Button>
                                 </div>
 
-                                {/* PDF Viewer - Rendered directly below resource info */}
+                                {/* Resource Preview based on type */}
                                 {resource.type === 'pdf' && (
                                     <div className="border-t">
-                                      <div className="p-4">
-                                        <h4 className="font-medium mb-3">PDF Preview</h4>
                                         <PDFViewer
                                             src={resource.url}
                                             fileName={resource.name}
                                         />
+                                    </div>
+                                )}
+
+                                {resource.type === 'image' && (
+                                    <div className="border-t">
+                                      <div className="p-4">
+                                        <h4 className="font-medium mb-3">Image Preview</h4>
+                                        <div className="flex justify-center">
+                                          <img
+                                              src={resource.url}
+                                              alt={resource.name}
+                                              className="max-w-full h-auto max-h-96 object-contain rounded-lg shadow-sm border"
+                                              loading="lazy"
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                )}
+
+                                {resource.type === 'video' && (
+                                    <div className="border-t">
+                                      <div className="p-4">
+                                        <h4 className="font-medium mb-3">Video Preview</h4>
+                                        <VideoPlayer
+                                            src={resource.url}
+                                            duration={resource.duration}
+                                        />
+                                      </div>
+                                    </div>
+                                )}
+
+                                {/* For other file types, you can add more previews as needed */}
+                                {!['pdf', 'image', 'video'].includes(resource.type) && (
+                                    <div className="border-t">
+                                      <div className="p-4">
+                                        <h4 className="font-medium mb-3">File Preview</h4>
+                                        <div className="text-center py-8 text-muted-foreground">
+                                          <File className="h-12 w-12 mx-auto mb-2" />
+                                          <p>Preview not available for {resource.type} files</p>
+                                          <p className="text-sm">Download the file to view its contents</p>
+                                        </div>
                                       </div>
                                     </div>
                                 )}

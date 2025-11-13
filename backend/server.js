@@ -18,6 +18,7 @@ const enrollmentRoutes = require("./routes/enrollmentRoutes");
 const ratingRoutes = require("./routes/ratingRoutes");
 const favoriteRoutes = require("./routes/favoriteRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const uploadRoutes = require("./routes/upload")
 
 // Connect to database
 connectDB();
