@@ -2,10 +2,10 @@
 
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { LessonFormValues } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import VideoPlayer from "@/components/video-player";
 import {
   Dialog,
   DialogContent,
@@ -34,12 +34,45 @@ import {
   Image,
   Trash2,
   Download,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { coursesAPI } from "@/lib/api";
-import { Lesson, Resource } from "@/types";
 import { Badge } from "@/components/ui/badge";
+
+// Types
+interface LessonFormValues {
+  title: string;
+  content: string;
+  duration: number;
+  order: number;
+  isFree: boolean;
+  isPublished: boolean;
+}
+
+interface Resource {
+  _id: string;
+  name: string;
+  type: string;
+  url: string;
+  size?: number;
+}
+
+interface VideoData {
+  url: string;
+  duration?: number;
+}
+
+interface Lesson {
+  _id: string;
+  title: string;
+  content: string;
+  duration: number;
+  order: number;
+  isFree: boolean;
+  isPublished: boolean;
+  resources?: Resource[];
+  video?: VideoData;
+}
 
 const lessonSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -93,11 +126,7 @@ export function LessonEditModal({
   const onSubmit = async (data: LessonFormValues) => {
     setIsLoading(true);
     try {
-      const response = await coursesAPI.updateLesson(
-        courseId,
-        lesson._id,
-        data
-      );
+      await coursesAPI.updateLesson(courseId, lesson._id, data);
       toast.success("Lesson updated successfully!");
       onLessonUpdated();
       onClose();
@@ -334,7 +363,7 @@ export function LessonEditModal({
   };
 
   const formatDuration = (seconds?: number) => {
-    if (!seconds) return "";
+    if (!seconds) return "0:00";
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
@@ -547,10 +576,9 @@ export function LessonEditModal({
 
                 {lessonVideo ? (
                   <div className="space-y-3">
-                    <video
-                      src={lessonVideo.url}
-                      controls
-                      className="w-full rounded-lg"
+                    <VideoPlayer 
+                      src={lessonVideo.url} 
+                      duration={formatDuration(lessonVideo.duration)}
                     />
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
