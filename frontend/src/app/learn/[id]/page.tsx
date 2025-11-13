@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import VideoPlayer from "@/components/video-player"
 import PDFViewer from "@/components/pdf-viewer"
 
-
 export default function LearnPage() {
   const params = useParams();
   const router = useRouter();
@@ -183,9 +182,9 @@ export default function LearnPage() {
   const progress = Math.round((completedLessons.size / sortedLessons.length) * 100);
 
   return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
           <div className="flex h-16 items-center justify-between px-4">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard")}>
@@ -211,11 +210,11 @@ export default function LearnPage() {
           </div>
         </header>
 
-        <div className="flex">
+        <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-80 bg-background border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+          <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-80 bg-background border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
             <div className="flex flex-col h-full">
-              <div className="p-4 border-b">
+              <div className="p-4 border-b flex-shrink-0">
                 <h2 className="font-semibold mb-2">Course Content</h2>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>{completedLessons.size} of {sortedLessons.length} lessons</span>
@@ -259,7 +258,7 @@ export default function LearnPage() {
           )}
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-y-auto">
             {currentLesson ? (
                 <div className="p-6 max-w-4xl mx-auto">
                   {/* Lesson Header */}
