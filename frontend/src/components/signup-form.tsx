@@ -49,8 +49,8 @@ export function SignupForm({
     try {
       await register(name, email, password, 'student');
       router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed. Please try again.');
+    } catch (error) {
+      toast.error('Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
