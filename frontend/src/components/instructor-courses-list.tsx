@@ -62,11 +62,9 @@ export function InstructorCoursesList() {
       } else {
         throw new Error(response.data?.message || "Failed to fetch courses");
       }
-    } catch (error: any) {
-      console.error("Error fetching instructor courses:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Failed to load courses";
-      setError(errorMessage);
-      toast.error(errorMessage);
+    } catch (error) {
+      console.log("Error fetching instructor courses:", error);
+      toast.error("Failed to load courses");
     } finally {
       setIsLoading(false);
     }
@@ -85,9 +83,8 @@ export function InstructorCoursesList() {
       toast.success(
         `Course ${currentStatus ? "unpublished" : "published"} successfully`
       );
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to update course status";
-      toast.error(errorMessage);
+    } catch (_) {
+      toast.error("Failed to update course status");
     }
   };
 
@@ -104,10 +101,8 @@ export function InstructorCoursesList() {
       await coursesAPI.deleteCourse(courseId);
       setCourses(courses.filter((course) => course._id !== courseId));
       toast.success("Course deleted successfully");
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to delete course";
-      toast.error(errorMessage);
-    }
+    } catch (_) {
+      toast.error("Failed to delete the course");    }
   };
 
   if (error) {
