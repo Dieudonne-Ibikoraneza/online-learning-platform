@@ -16,6 +16,45 @@ interface PDFViewerProps {
     fileName?: string;
 }
 
+interface PDFDocument {
+    numPages: number;
+    getPage(pageNumber: number): Promise<PDFPage>;
+    destroy(): Promise<void>;
+}
+
+interface RenderContext {
+    canvasContext: CanvasRenderingContext2D;
+    viewport: Viewport;
+}
+
+interface PDFPage {
+    getViewport(options: { scale: number; rotation: number }): Viewport;
+    render(renderContext: RenderContext): { promise: Promise<void>; cancel(): void };
+}
+
+interface Viewport {
+    width: number;
+    height: number;
+}
+
+interface RenderTask {
+    cancel(): void;
+    promise: Promise<void>;
+}
+
+interface PDFJSLib {
+    GlobalWorkerOptions: {
+        workerSrc: string;
+    };
+    getDocument(src: string): { promise: Promise<PDFDocument> };
+}
+
+declare global {
+    interface Window {
+        pdfjsLib?: PDFJSLib;
+    }
+}
+
 const PDFViewer = ({ src, fileName = "document.pdf" }: PDFViewerProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -29,10 +68,9 @@ const PDFViewer = ({ src, fileName = "document.pdf" }: PDFViewerProps) => {
     const [rotation, setRotation] = useState(0);
     const [canvasElements, setCanvasElements] = useState<JSX.Element[]>([]);
 
-    const pdfDocRef = useRef<any>(null);
-    const renderTasksRef = useRef<Map<number, any>>(new Map());
+    const pdfDocRef = useRef<PDFDocument | null>(null);
+    const renderTasksRef = useRef<Map<number, RenderTask>>(new Map());
     const instanceIdRef = useRef(`pdf-${Math.random().toString(36).substr(2, 9)}`);
-
 
     // PDF.js setup
     useEffect(() => {
@@ -52,7 +90,7 @@ const PDFViewer = ({ src, fileName = "document.pdf" }: PDFViewerProps) => {
                 renderTasksRef.current.clear();
 
                 // Load PDF.js from CDN
-                if (!(window as any).pdfjsLib) {
+                if (!window.pdfjsLib) {
                     const script = document.createElement('script');
                     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
                     script.async = true;
@@ -64,7 +102,7 @@ const PDFViewer = ({ src, fileName = "document.pdf" }: PDFViewerProps) => {
                     });
                 }
 
-                const pdfjsLib = (window as any).pdfjsLib;
+                const pdfjsLib = window.pdfjsLib as PDFJSLib;
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
                 const loadingTask = pdfjsLib.getDocument(src);
@@ -124,13 +162,13 @@ const PDFViewer = ({ src, fileName = "document.pdf" }: PDFViewerProps) => {
         };
     }, [src]);
 
-    const renderAllPages = async (pdf: any, zoom: number) => {
+    const renderAllPages = async (pdf: PDFDocument, zoom: number) => {
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             await renderPage(pdf, pageNum, zoom);
         }
     };
 
-    const renderPage = async (pdf: any, pageNum: number, zoom: number) => {
+    const renderPage = async (pdf: PDFDocument, pageNum: number, zoom: number) => {
         try {
             // Wait a bit for the canvas to be available in DOM
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -167,7 +205,7 @@ const PDFViewer = ({ src, fileName = "document.pdf" }: PDFViewerProps) => {
             // Clear the canvas before rendering
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const renderContext = {
+            const renderContext: RenderContext = {
                 canvasContext: ctx,
                 viewport: viewport
             };

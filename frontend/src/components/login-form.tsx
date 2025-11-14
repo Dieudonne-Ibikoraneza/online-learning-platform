@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -34,8 +34,8 @@ export function LoginForm({
     try {
       await login(email, password);
       router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed. Please check your credentials and try again.');
+    } catch (error) {
+      toast.error('Login failed. Please check your credentials and try again.');
     } finally {
       setIsLoading(false);
     }

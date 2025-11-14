@@ -3,6 +3,7 @@
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { DashboardProvider, useDashboard } from "@/context/DashboardContext";
+import React from "react";
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { sidebarOpen, setSidebarOpen, toggleSidebar } = useDashboard();

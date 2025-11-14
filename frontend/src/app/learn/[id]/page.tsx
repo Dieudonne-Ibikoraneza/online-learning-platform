@@ -25,6 +25,27 @@ import { toast } from "sonner";
 import VideoPlayer from "@/components/video-player"
 import PDFViewer from "@/components/pdf-viewer"
 
+// Add interfaces for missing types
+interface CompletedLesson {
+  lessonId?: string;
+  _id?: string;
+  id?: string;
+}
+
+interface Enrollment {
+  _id: string;
+  completedLessons?: (string | CompletedLesson)[];
+}
+
+interface Resource {
+  _id: string;
+  name: string;
+  type: string;
+  url: string;
+  size?: number;
+  duration?: number;
+}
+
 export default function LearnPage() {
   const params = useParams();
   const router = useRouter();
@@ -32,11 +53,19 @@ export default function LearnPage() {
   const courseId = params.id as string;
 
   const [course, setCourse] = useState<Course | null>(null);
-  const [enrollment, setEnrollment] = useState<any>(null);
+  const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Helper function to format duration
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (courseId && user) {
@@ -63,10 +92,19 @@ export default function LearnPage() {
       setEnrollment(enrollmentData?.enrollment || null);
 
       if (enrollmentData?.enrollment) {
+        // Update the mapping function
+        // Update the mapping function:
         const completedSet = new Set(
-            enrollmentData.enrollment.completedLessons?.map((lesson: any) =>
-                lesson.lessonId?.toString()
-            ) || []
+            (enrollmentData.enrollment.completedLessons || []).map((item: string | CompletedLesson) => {
+              // Handle different possible structures with proper type checking
+              if (typeof item === 'string') {
+                return item;
+              }
+              if (item && typeof item === 'object') {
+                return (item.lessonId || item._id || item.id || '').toString();
+              }
+              return ''; // Return empty string for unexpected types
+            }).filter((id): id is string => !!id) // Remove empty strings
         );
         setCompletedLessons(completedSet);
 
@@ -124,7 +162,7 @@ export default function LearnPage() {
     }
   };
 
-  const handleDownload = async (resource: any) => {
+  const handleDownload = async (resource: Resource) => {
     try {
       toast.info(`Starting download: ${resource.name}`);
 
@@ -280,7 +318,10 @@ export default function LearnPage() {
                   {/* Video Player */}
                   {currentLesson.video?.url && (
                       <div className="mb-8">
-                        <VideoPlayer src={currentLesson.video.url} duration={currentLesson.video.duration} />
+                        <VideoPlayer
+                            src={currentLesson.video.url}
+                            duration={formatDuration(currentLesson.video.duration)}
+                        />
                       </div>
                   )}
 
@@ -322,7 +363,7 @@ export default function LearnPage() {
                                   <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => handleDownload(resource)}
+                                      onClick={() => handleDownload(resource as Resource)}
                                       className="flex items-center justify-center gap-2"
                                   >
                                     <Download className="h-4 w-4" />
@@ -333,10 +374,10 @@ export default function LearnPage() {
                                 {/* Resource Preview based on type */}
                                 {resource.type === 'pdf' && (
                                     <div className="border-t">
-                                        <PDFViewer
-                                            src={resource.url}
-                                            fileName={resource.name}
-                                        />
+                                      <PDFViewer
+                                          src={resource.url}
+                                          fileName={resource.name}
+                                      />
                                     </div>
                                 )}
 
@@ -362,7 +403,7 @@ export default function LearnPage() {
                                         <h4 className="font-medium mb-3">Video Preview</h4>
                                         <VideoPlayer
                                             src={resource.url}
-                                            duration={resource.duration}
+                                            duration={formatDuration(resource.duration)}
                                         />
                                       </div>
                                     </div>

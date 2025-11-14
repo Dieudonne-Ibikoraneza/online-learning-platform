@@ -25,13 +25,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -42,8 +35,8 @@ const lessonSchema = z.object({
   content: z.string().min(10, "Content must be at least 10 characters"),
   duration: z.number().min(1, "Duration must be at least 1 minute"),
   order: z.number().min(1, "Order must be at least 1"),
-  isFree: z.boolean().default(false),
-  isPublished: z.boolean().default(true),
+  isFree: z.boolean(),
+  isPublished: z.boolean(),
 });
 
 type LessonFormValues = z.infer<typeof lessonSchema>;
@@ -82,29 +75,35 @@ export function LessonCreationModal({
     try {
       console.log('Creating lesson with data:', data);
       console.log('Course ID:', courseId);
-      
+
       const response = await coursesAPI.addLesson(courseId, data);
       console.log('Lesson creation response:', response);
-      
+
       toast.success("Lesson created successfully!");
       form.reset();
       onLessonCreated();
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Lesson creation error:', error);
-      console.error('Error response:', error.response);
-      
-      if (error.response) {
-        toast.error(error.response.data?.message || `Failed to create lesson: ${error.response.status}`);
-      } else if (error.request) {
-        toast.error("Network error: Could not connect to server");
+
+      // Handle axios errors specifically
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const axiosError = error as {
+          response?: {
+            data?: { message?: string };
+            status?: number;
+          };
+        };
+        toast.error(axiosError.response?.data?.message || `Failed to create lesson: ${axiosError.response?.status}`);
+      } else if (error instanceof Error) {
+        toast.error(error.message);
       } else {
-        toast.error("Failed to create lesson: " + error.message);
+        toast.error("Failed to create lesson");
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   const handleClose = () => {
     form.reset();

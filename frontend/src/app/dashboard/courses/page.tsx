@@ -29,7 +29,17 @@ export default function CoursesPage() {
   const fetchCourses = async () => {
     try {
       // Build query params based on filters
-      const params: any = {
+      const params: {
+        limit: number;
+        sort: string;
+        search?: string;
+        category?: string;
+        difficulty?: string;
+        price?: string;
+        minPrice?: string;
+        maxPrice?: string;
+        minRating?: string;
+      } = {
         limit: 12,
         sort: "-averageRating",
       };
