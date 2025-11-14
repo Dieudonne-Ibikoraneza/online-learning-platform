@@ -11,6 +11,7 @@ interface AuthUser {
   name: string;
   email: string;
   role: string;
+  bio?: string;
   avatar?: {
     url: string;
     public_id: string;
