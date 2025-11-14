@@ -5,18 +5,30 @@ import { toast } from "sonner";
 import { User, AuthResponse } from "@/types";
 import { authAPI } from "@/lib/api";
 
+// Create a simplified type for auth responses
+interface AuthUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar?: {
+    url: string;
+    public_id: string;
+  };
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (
-    name: string,
-    email: string,
-    password: string,
-    role?: string
+      name: string,
+      email: string,
+      password: string,
+      role?: string
   ) => Promise<void>;
   logout: () => void;
-  updateUser: (user: User) => void;
+  updateUser: (user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,9 +42,9 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [user, setUser] = useState<User | null>(null);
+                                                                        children,
+                                                                      }) => {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -44,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const token = localStorage.getItem("token");
       if (token) {
         const response = await authAPI.getMe();
-        setUser(response.data.data);
+        setUser(response.data.data as AuthUser);
       }
     } catch (error) {
       console.error("Auth check failed:", error);
@@ -62,24 +74,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     localStorage.setItem("token", token);
     localStorage.setItem("refreshToken", refreshToken);
-    setUser(userData);
+    setUser(userData as AuthUser);
     toast.success("Welcome back! You have successfully logged in.");
   };
 
   const register = async (
-    name: string,
-    email: string,
-    password: string,
-    role?: string
+      name: string,
+      email: string,
+      password: string,
+      role?: string
   ) => {
     const response = await authAPI.register({ name, email, password, role });
     const { token, refreshToken, ...userData } = response.data.data;
 
     localStorage.setItem("token", token);
     localStorage.setItem("refreshToken", refreshToken);
-    setUser(userData);
+    setUser(userData as AuthUser);
     toast.success(
-      "Account created! Your account has been created successfully."
+        "Account created! Your account has been created successfully."
     );
   };
 
@@ -92,23 +104,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     authAPI.logout().catch(console.error);
   };
 
-  const updateUser = (updatedUser: User) => {
+  const updateUser = (updatedUser: AuthUser) => {
     setUser(updatedUser);
     toast.success("Your profile has been updated successfully.");
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        login,
-        register,
-        logout,
-        updateUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+      <AuthContext.Provider
+          value={{
+            user,
+            isLoading,
+            login,
+            register,
+            logout,
+            updateUser,
+          }}
+      >
+        {children}
+      </AuthContext.Provider>
   );
 };
